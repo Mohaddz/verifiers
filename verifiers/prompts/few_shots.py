@@ -1,6 +1,7 @@
 from verifiers.parsers import XMLParser
 
 math_parser = XMLParser(fields=["reasoning", "answer"])
+thought_parser = XMLParser(fields=["thought", "answer"])
 MATH_FEW_SHOT = [
     [
         {'role': 'user', 'content': 'What is the largest single-digit prime number?'},
@@ -267,6 +268,53 @@ CALCULATOR_FEW_SHOT = [
             'content': tool_parser.format(
                 reasoning="Samantha has 10 cups of flour and each batch requires 2.5 cups of flour.\n10 ÷ 2.5 = 4\nSo Samantha can make 4 complete batches of cookies with her 10 cups of flour.",
                 answer="4 batches"
+            )
+        }
+    ]
+]
+
+THOUGHT_FEW_SHOT = [
+    [
+        {
+            'role': 'user',
+            'content': 'If a store is selling apples at 3 for $5, how much would 10 apples cost?'
+        },
+        {
+            'role': 'assistant',
+            'content': thought_parser.format(
+                thought="""I need to find the cost of 10 apples.
+
+The store is selling apples at 3 for $5.
+
+First, I'll find the cost of 1 apple:
+Cost of 1 apple = $5 ÷ 3 = $1.67 (approximately)
+
+Now I can find the cost of 10 apples:
+Cost of 10 apples = 10 × $1.67 = $16.70
+
+Wait, let me be more precise. Instead of using the approximate cost per apple, I should use the fraction:
+
+3 apples cost $5
+So 1 apple costs $5/3
+And 10 apples cost 10 × $5/3 = $50/3 = $16.67 (rounded to cents)""",
+                answer="$16.67"
+            )
+        },
+        {
+            'role': 'user',
+            'content': 'If I have 15 marbles and give 1/3 of them to my friend, how many marbles do I have left?'
+        },
+        {
+            'role': 'assistant',
+            'content': thought_parser.format(
+                thought="""I start with 15 marbles.
+
+I give 1/3 of them to my friend.
+The number I give away is: 15 × (1/3) = 5 marbles.
+
+So the number of marbles I have left is:
+15 - 5 = 10 marbles.""",
+                answer="10 marbles"
             )
         }
     ]

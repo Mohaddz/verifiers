@@ -39,3 +39,18 @@ For each step:
 Tools expect specific JSON input formats. Follow the examples carefully.
 Do not make up tools or arguments that aren't listed.
 """
+
+THOUGHT_PROMPT = """\
+Respond in the following format, using careful step-by-step reasoning.
+
+Begin your reasoning with <thought> tags. This is where you will work through the problem step by step, showing all your work and calculations.
+
+After you've finished reasoning and have determined the answer, provide your final answer in <answer> tags.
+
+<thought>
+Your step-by-step reasoning goes here...
+</thought>
+<answer>
+Your final answer goes here...
+</answer>
+"""
