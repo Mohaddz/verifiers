@@ -15,8 +15,10 @@ def run_thought_training(
     max_samples: int = 5000,
     learning_rate: float = 1e-6,
     num_train_epochs: int = 3,
-    num_generations: int = 6,
-    per_device_train_batch_size: int = 6
+    num_generations: int = 4,  # Changed to 4 which works with both training and eval
+    per_device_train_batch_size: int = 4,  # Changed to match num_generations
+    per_device_eval_batch_size: int = 4,  # Added parameter for eval batch size
+    eval_accumulation_steps: int = 8  # Added parameter to control eval accumulation
 ):
     """
     Train a model on thought-based reasoning tasks.
@@ -28,8 +30,10 @@ def run_thought_training(
         max_samples: Maximum number of samples to use
         learning_rate: Learning rate for training
         num_train_epochs: Number of training epochs
-        num_generations: Number of generations per prompt
-        per_device_train_batch_size: Per device train batch size
+        num_generations: Number of generations per prompt (must be a factor of eval_accumulation_steps)
+        per_device_train_batch_size: Per device train batch size (must be divisible by num_generations)
+        per_device_eval_batch_size: Per device evaluation batch size
+        eval_accumulation_steps: Number of eval steps to accumulate before backward pass
     """
     # Initialize model and tokenizer
     model, tokenizer = vf.get_model_and_tokenizer(model_name)
@@ -59,12 +63,13 @@ def run_thought_training(
     # Set specific training parameters
     training_args.num_generations = num_generations
     training_args.per_device_train_batch_size = per_device_train_batch_size
+    training_args.per_device_eval_batch_size = per_device_eval_batch_size
     training_args.gradient_accumulation_steps = 4
     training_args.num_iterations = 2
     training_args.beta = 0.04
     training_args.eval_strategy = "steps"
     training_args.eval_steps = 100
-    training_args.eval_accumulation_steps = 8
+    training_args.eval_accumulation_steps = eval_accumulation_steps
     training_args.learning_rate = learning_rate
     training_args.num_train_epochs = num_train_epochs
     
@@ -91,10 +96,18 @@ if __name__ == "__main__":
     parser.add_argument("--max_samples", type=int, default=1000, help="Maximum number of samples to use")
     parser.add_argument("--learning_rate", type=float, default=1e-6, help="Learning rate for training")
     parser.add_argument("--num_train_epochs", type=int, default=1, help="Number of training epochs")
-    parser.add_argument("--num_generations", type=int, default=6, help="Number of generations per prompt")
-    parser.add_argument("--per_device_train_batch_size", type=int, default=6, help="Per device train batch size")
+    parser.add_argument("--num_generations", type=int, default=4, help="Number of generations per prompt (must be a factor of eval_accumulation_steps)")
+    parser.add_argument("--per_device_train_batch_size", type=int, default=4, help="Per device train batch size")
+    parser.add_argument("--per_device_eval_batch_size", type=int, default=4, help="Per device evaluation batch size")
+    parser.add_argument("--eval_accumulation_steps", type=int, default=8, help="Number of evaluation steps to accumulate")
     
     args = parser.parse_args()
+    
+    # Make sure num_generations is a factor of eval_accumulation_steps
+    if args.eval_accumulation_steps % args.num_generations != 0:
+        valid_factors = [i for i in range(1, args.eval_accumulation_steps + 1) 
+                         if args.eval_accumulation_steps % i == 0]
+        parser.error(f"num_generations ({args.num_generations}) must be a factor of eval_accumulation_steps ({args.eval_accumulation_steps}). Valid values: {valid_factors}")
     
     # Run with provided parameters
     run_thought_training(
@@ -105,5 +118,7 @@ if __name__ == "__main__":
         learning_rate=args.learning_rate,
         num_train_epochs=args.num_train_epochs,
         num_generations=args.num_generations,
-        per_device_train_batch_size=args.per_device_train_batch_size
+        per_device_train_batch_size=args.per_device_train_batch_size,
+        per_device_eval_batch_size=args.per_device_eval_batch_size,
+        eval_accumulation_steps=args.eval_accumulation_steps
     )
