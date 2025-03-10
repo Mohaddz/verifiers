@@ -14,7 +14,7 @@ class ThoughtEnv(MultiStepEnv):
     """Environment for training models on thought-based reasoning."""
     
     def __init__(self,
-                 dataset_path: str = "openai/open-thought-114k",
+                 dataset_path: str = "open-thoughts/OpenThoughts-114k",
                  system_prompt: str = THOUGHT_PROMPT,
                  few_shot: List[Dict[str, str]] = THOUGHT_FEW_SHOT[0],
                  sampling_args: Dict[str, Any] = {
@@ -58,15 +58,20 @@ class ThoughtEnv(MultiStepEnv):
     def get_eval_dataset(self, **kwargs: Any) -> Dataset:
         """Get the preprocessed evaluation dataset."""
         if self.eval_dataset is None:
-            # Use a smaller sample for evaluation
+            # Use a fixed proportion of the train split for evaluation
             eval_samples = min(1000, self.max_samples // 5)
+            
+            # Use a different random seed for evaluation sampling
+            eval_seed = self.random_seed + 42
+            
+            # Get evaluation dataset from train split
             self.eval_dataset = preprocess_thought_dataset(
                 dataset_path=self.dataset_path,
-                split="validation" if "validation" in self.dataset_path else "test",
+                split="train",  # Use train split since there's no test split
                 system_prompt=self.system_prompt,
                 few_shot=self.few_shot,
                 max_samples=eval_samples,
-                random_seed=self.random_seed
+                random_seed=eval_seed  # Different seed ensures no overlap with training data
             )
         return self.eval_dataset
     

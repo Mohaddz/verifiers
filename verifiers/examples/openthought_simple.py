@@ -9,7 +9,7 @@ from verifiers.envs.thought_env import ThoughtEnv
 
 def run_thought_training(
     model_name: str = "Qwen/Qwen2.5-7B-Instruct",
-    dataset_path: str = "openai/open-thought-114k",
+    dataset_path: str = "open-thoughts/OpenThoughts-114k",
     num_gpus: int = 8,
     max_samples: int = 5000,
     learning_rate: float = 1e-6,

@@ -89,7 +89,7 @@ def preprocess_dataset(dataset_name: str = "gsm8k",
         raise ValueError(f"Dataset {dataset_name} not supported for preprocess_dataset.")
 
 def preprocess_thought_dataset(
-        dataset_path: str = "openai/open-thought-114k",
+        dataset_path: str = "open-thoughts/OpenThoughts-114k",
         split: str = "train",
         system_prompt: Optional[str] = None,
         few_shot: Optional[List[Dict[str, str]]] = None,
