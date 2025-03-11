@@ -15,6 +15,7 @@ def run_thought_training(
     max_samples: int = 5000,
     learning_rate: float = 1e-6,
     num_train_epochs: int = 3,
+    max_steps: int = 1000,  # Added parameter for max steps
     num_generations: int = 4,  # Changed to 4 which works with both training and eval
     per_device_train_batch_size: int = 4,  # Changed to match num_generations
     per_device_eval_batch_size: int = 4,  # Added parameter for eval batch size
@@ -30,6 +31,7 @@ def run_thought_training(
         max_samples: Maximum number of samples to use
         learning_rate: Learning rate for training
         num_train_epochs: Number of training epochs
+        max_steps: Maximum number of training steps
         num_generations: Number of generations per prompt (must be a factor of eval_accumulation_steps)
         per_device_train_batch_size: Per device train batch size (must be divisible by num_generations)
         per_device_eval_batch_size: Per device evaluation batch size
@@ -72,6 +74,7 @@ def run_thought_training(
     training_args.eval_accumulation_steps = eval_accumulation_steps
     training_args.learning_rate = learning_rate
     training_args.num_train_epochs = num_train_epochs
+    training_args.max_steps = max_steps  # Set max_steps to ensure training progresses
     
     # Initialize trainer
     trainer = vf.GRPOEnvTrainer(
@@ -96,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_samples", type=int, default=1000, help="Maximum number of samples to use")
     parser.add_argument("--learning_rate", type=float, default=1e-6, help="Learning rate for training")
     parser.add_argument("--num_train_epochs", type=int, default=1, help="Number of training epochs")
+    parser.add_argument("--max_steps", type=int, default=1000, help="Maximum number of training steps")
     parser.add_argument("--num_generations", type=int, default=4, help="Number of generations per prompt (must be a factor of eval_accumulation_steps)")
     parser.add_argument("--per_device_train_batch_size", type=int, default=4, help="Per device train batch size")
     parser.add_argument("--per_device_eval_batch_size", type=int, default=4, help="Per device evaluation batch size")
@@ -117,6 +121,7 @@ if __name__ == "__main__":
         max_samples=args.max_samples,
         learning_rate=args.learning_rate,
         num_train_epochs=args.num_train_epochs,
+        max_steps=args.max_steps,
         num_generations=args.num_generations,
         per_device_train_batch_size=args.per_device_train_batch_size,
         per_device_eval_batch_size=args.per_device_eval_batch_size,
