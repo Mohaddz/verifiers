@@ -182,4 +182,11 @@ def preprocess_thought_dataset(
     # Filter out examples without prompts or answers
     processed_dataset = processed_dataset.filter(lambda x: x["prompt"] and x["answer"])
     
+    # Important: Make sure dataset has a __len__ method by converting to standard Dataset if it's an IterableDataset
+    if not hasattr(processed_dataset, '__len__') or callable(getattr(processed_dataset, '__len__', None)) is False:
+        processed_dataset = Dataset.from_dict(processed_dataset.to_dict())
+    
+    # Set dataset format for proper length calculation
+    processed_dataset = processed_dataset.with_format("torch")
+    
     return processed_dataset

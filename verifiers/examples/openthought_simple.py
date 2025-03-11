@@ -62,6 +62,12 @@ def run_thought_training(
         num_gpus=num_gpus
     )
     
+    # Handle small datasets by disabling evaluation
+    # This prevents issues with evaluation batch size when dataset is very small
+    if max_samples <= 100:
+        print("Small dataset detected. Disabling evaluation to avoid batch size issues.")
+        eval_dataset = None
+    
     # Set specific training parameters
     training_args.num_generations = num_generations
     training_args.per_device_train_batch_size = per_device_train_batch_size
@@ -74,7 +80,14 @@ def run_thought_training(
     training_args.eval_accumulation_steps = eval_accumulation_steps
     training_args.learning_rate = learning_rate
     training_args.num_train_epochs = num_train_epochs
-    training_args.max_steps = max_steps  # Set max_steps to ensure training progresses
+    
+    # Critical: Set max_steps to ensure training progresses even if dataset length is problematic
+    # Transformers expects either max_steps or a dataset with a valid __len__ method
+    training_args.max_steps = max_steps
+    
+    # Calculate a reasonable default if max_steps is very small
+    if hasattr(dataset, '__len__') and max_steps < len(dataset) // (per_device_train_batch_size * num_gpus):
+        training_args.max_steps = max(max_steps, len(dataset) // (per_device_train_batch_size * num_gpus * 4))
     
     # Initialize trainer
     trainer = vf.GRPOEnvTrainer(

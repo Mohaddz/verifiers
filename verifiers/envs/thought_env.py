@@ -53,6 +53,14 @@ class ThoughtEnv(MultiStepEnv):
                 max_samples=self.max_samples,
                 random_seed=self.random_seed
             )
+            
+            # Verify dataset has a proper length method
+            if not hasattr(self.dataset, '__len__'):
+                raise ValueError("Dataset doesn't have a __len__ method. Please fix your dataset implementation.")
+                
+            # Log dataset size
+            print(f"Training dataset size: {len(self.dataset)} examples")
+            
         return self.dataset
     
     def get_eval_dataset(self, **kwargs: Any) -> Dataset:
@@ -73,6 +81,14 @@ class ThoughtEnv(MultiStepEnv):
                 max_samples=eval_samples,
                 random_seed=eval_seed  # Different seed ensures no overlap with training data
             )
+            
+            # Verify dataset has a proper length method
+            if not hasattr(self.eval_dataset, '__len__'):
+                raise ValueError("Eval dataset doesn't have a __len__ method. Please fix your dataset implementation.")
+                
+            # Log dataset size
+            print(f"Evaluation dataset size: {len(self.eval_dataset)} examples")
+        
         return self.eval_dataset
     
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
