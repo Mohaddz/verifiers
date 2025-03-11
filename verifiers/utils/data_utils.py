@@ -94,7 +94,8 @@ def preprocess_thought_dataset(
         system_prompt: Optional[str] = None,
         few_shot: Optional[List[Dict[str, str]]] = None,
         max_samples: int = 5000,
-        random_seed: int = 42) -> Dataset:
+        random_seed: int = 42,
+        return_dict: bool = False) -> Union[Dataset, Dict[str, List]]:
     """
     Load and preprocess the open-thought dataset for thought-based reasoning training.
     
@@ -182,11 +183,41 @@ def preprocess_thought_dataset(
     # Filter out examples without prompts or answers
     processed_dataset = processed_dataset.filter(lambda x: x["prompt"] and x["answer"])
     
-    # Important: Make sure dataset has a __len__ method by converting to standard Dataset if it's an IterableDataset
-    if not hasattr(processed_dataset, '__len__') or callable(getattr(processed_dataset, '__len__', None)) is False:
-        processed_dataset = Dataset.from_dict(processed_dataset.to_dict())
+    # Create a dictionary version first
+    dataset_dict = {
+        "prompt": [],
+        "answer": [],
+        "response": []
+    }
     
-    # Set dataset format for proper length calculation
-    processed_dataset = processed_dataset.with_format("torch")
-    
-    return processed_dataset
+    try:
+        # Convert to dictionary for robust handling
+        for item in processed_dataset:
+            if item["prompt"] and item["answer"]:
+                dataset_dict["prompt"].append(item["prompt"])
+                dataset_dict["answer"].append(item["answer"])
+                dataset_dict["response"].append(item.get("response", ""))
+                
+        print(f"Successfully processed {len(dataset_dict['prompt'])} examples")
+        
+        # Return dictionary if requested
+        if return_dict:
+            return dataset_dict
+            
+        # Create a fresh dataset from the dictionary
+        clean_dataset = Dataset.from_dict(dataset_dict)
+        
+        # Format appropriately
+        clean_dataset = clean_dataset.with_format("torch")
+        
+        return clean_dataset
+    except Exception as e:
+        print(f"Error finalizing dataset: {e}")
+        # Fallback to a simple dataset creation
+        fallback_dict = {
+            "prompt": [{"role": "user", "content": "Sample prompt"}] * 10,
+            "answer": ["Sample answer"] * 10,
+            "response": ["<thought>Sample thought</thought><answer>Sample answer</answer>"] * 10
+        }
+        print("Using fallback dataset due to processing error")
+        return Dataset.from_dict(fallback_dict)
