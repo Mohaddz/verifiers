@@ -85,6 +85,17 @@ def run_thought_training(
         eval_dataset = None
         print("Using fallback dataset due to error")
     
+    # CRITICAL: Make sure batch size is compatible with num_generations
+    # The global batch size (per_device_train_batch_size * num_gpus) must be at least equal to num_generations
+    if per_device_train_batch_size * num_gpus < num_generations:
+        print(f"WARNING: Adjusting parameters to ensure compatibility:")
+        print(f"  - Global batch size ({per_device_train_batch_size} × {num_gpus} = {per_device_train_batch_size * num_gpus})")
+        print(f"  - Number of generations: {num_generations}")
+        
+        # Adjust num_generations to match batch size
+        num_generations = per_device_train_batch_size * num_gpus
+        print(f"  → Setting num_generations = {num_generations} to match global batch size")
+    
     # Set specific training parameters
     training_args.num_generations = num_generations
     training_args.per_device_train_batch_size = per_device_train_batch_size
@@ -161,9 +172,9 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=1e-6, help="Learning rate for training")
     parser.add_argument("--num_train_epochs", type=int, default=1, help="Number of training epochs")
     parser.add_argument("--max_steps", type=int, default=1000, help="Maximum number of training steps")
-    parser.add_argument("--num_generations", type=int, default=4, help="Number of generations per prompt (must be a factor of eval_accumulation_steps)")
-    parser.add_argument("--per_device_train_batch_size", type=int, default=4, help="Per device train batch size")
-    parser.add_argument("--per_device_eval_batch_size", type=int, default=4, help="Per device evaluation batch size")
+    parser.add_argument("--num_generations", type=int, default=1, help="Number of generations per prompt (must be ≤ global batch size)")
+    parser.add_argument("--per_device_train_batch_size", type=int, default=1, help="Per device train batch size (global batch size = this × num_gpus)")
+    parser.add_argument("--per_device_eval_batch_size", type=int, default=1, help="Per device evaluation batch size")
     parser.add_argument("--eval_accumulation_steps", type=int, default=8, help="Number of evaluation steps to accumulate")
     
     args = parser.parse_args()
@@ -173,6 +184,13 @@ if __name__ == "__main__":
         valid_factors = [i for i in range(1, args.eval_accumulation_steps + 1) 
                          if args.eval_accumulation_steps % i == 0]
         parser.error(f"num_generations ({args.num_generations}) must be a factor of eval_accumulation_steps ({args.eval_accumulation_steps}). Valid values: {valid_factors}")
+    
+    # CRITICAL: Ensure batch size is at least equal to num_generations
+    if args.per_device_train_batch_size * args.num_gpus < args.num_generations:
+        parser.error(f"Global batch size ({args.per_device_train_batch_size} × {args.num_gpus} = {args.per_device_train_batch_size * args.num_gpus}) must be at least equal to num_generations ({args.num_generations}).\n"
+                    f"Solutions:\n"
+                    f"1. Increase batch size: --per_device_train_batch_size={args.num_generations}\n"
+                    f"2. Or decrease generations: --num_generations={args.per_device_train_batch_size * args.num_gpus}")
     
     # Run with provided parameters
     run_thought_training(
