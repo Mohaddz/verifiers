@@ -92,7 +92,11 @@ def run_thought_training(
     training_args.gradient_accumulation_steps = 4
     training_args.num_iterations = 2
     training_args.beta = 0.04
-    training_args.eval_strategy = "no" if eval_dataset is None else "steps"  # Disable evaluation completely if dataset is None
+    
+    # Always set eval_strategy to "no" regardless of eval_dataset
+    # This avoids issues with the trainer requiring eval_dataset when eval_strategy="steps"
+    training_args.eval_strategy = "no"
+    
     training_args.eval_steps = 100
     training_args.eval_accumulation_steps = eval_accumulation_steps
     training_args.learning_rate = learning_rate
@@ -133,6 +137,7 @@ def run_thought_training(
         print(f"Created dummy dataset with {len(dataset)} examples")
     
     # Initialize trainer with appropriate settings
+    # Don't pass eval_dataset to avoid any issues with evaluation
     trainer = vf.GRPOEnvTrainer(
         model=model,
         processing_class=tokenizer,
@@ -140,7 +145,7 @@ def run_thought_training(
         env=vf_env,
         args=training_args,
         train_dataset=dataset,
-        eval_dataset=eval_dataset
+        # No eval_dataset - using eval_strategy="no"
     )
     
     # Start training
